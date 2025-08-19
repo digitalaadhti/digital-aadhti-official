@@ -1,0 +1,94 @@
+Attached: DigitalAadhti 25.0.18.zip (root contains app.py, main.py, api.py, models.py, extensions.py, install_or_update.py, .env, requirements.txt, etc.)
+Project: Digital Aadhti — commission calculation and Grain Market tools for Brokers & Aadhtis.
+Goal (short)
+Current Frontend style,colors should be remain same.
+Make Digital Aadhti run both as a native desktop app (Windows) and as a browser-accessible web app, with a single, easy developer start flow on Replit. Ensure user data persists outside the app bundle so uninstalling or removing the app code does not delete user data. Deliver production-ready packaging instructions and build artifacts (or documented build steps) and keep the default DB strategy SQLite (file in OS data dir) with optional Postgres via DATABASE_URL.
+Key constraints & DB strategy (required)
+Local / Desktop / Dev (default): SQLite stored in a configurable OS-specific data directory outside the app source:
+Env var: DIGITALAADHTI_DATA_DIR (default: OS app data folder; e.g., Windows %APPDATA%\DigitalAadhti, macOS ~/Library/Application Support/DigitalAadhti, Linux $XDG_DATA_HOME/.digitalaadhti or ~/.digitalaadhti).
+DB file: digitalaadhti.db inside that dir (absolute path).
+This ensures uninstalling or deleting the app source/installation does not remove user data.
+Production / Multi-user: PostgreSQL via DATABASE_URL (no code changes required beyond config).
+The app must default to SQLite for local ease and be Postgres-compatible.
+Desktop approach (required, pick & implement one):
+Implement the desktop client such that it runs the Flask backend locally and presents a native window UI. Provide one of these two fully implemented options (prefer the first if you must choose):
+Recommended (lightweight): PyWebView + PyInstaller
+Run Flask backend locally (on 127.0.0.1:PORT).
+Launch a PyWebView window that loads the local URL — provides a native OS window and menu.
+Provide a simple wrapper desktop_launcher that ensures the backend starts, opens the WebView, and cleanly shuts down the backend when the window closes.
+Provide packaging steps using PyInstaller (Windows .exe via pyinstaller --onefile or --onedir).
+Deliver build scripts and instructions for creating distributables/installers.
+Alternative (if you prefer web-frontend dev tooling): Electron / Tauri
+Electron: makes a Node-based desktop shell that loads the Flask app. Provide Node build scripts, packaging with electron-builder, and launcher that spawns the bundled Python server.
+Tauri: more modern / smaller — document and provide optional Tauri config if implemented.
+Only implement if familiarity and packaging reliability are proven in branch.
+Implement option 1 by default unless you clearly demonstrate why option 2 is better for this repo.
+Browser support (required)
+The Flask app must remain fully browser-accessible for remote access or local browser usage.
+Desktop builds must use the same backend codebase — no divergent feature sets. Desktop is essentially a wrapped browser window for the same Flask app.
+Ensure CORS and security headers are set appropriately when desktop or browser remote access is used; document recommended deployment security.
+Replit-specific requirements (one-command start)
+Provide a single start command that Replit can run to:
+Create data directory (if missing),
+Install dependencies (use virtualenv or Replit environment),
+Apply migrations,
+Launch the Flask server (for browser) or the desktop launcher (for local packaging/desktop dev).
+Put that single command in Replit task instructions and add a run script name that Replit uses (e.g., .replit / Start button). The command should default to running the web server so Replit preview works; include instructions for running the desktop window locally.
+Deliverables (what I expect in branch fix/desktop-and-web)
+Branch: fix/desktop-and-web.
+Config: Centralized DB config using DIGITALAADHTI_DATA_DIR and DATABASE_URL. OS-specific default data dir documented.
+Desktop launcher: desktop_launcher (Python entrypoint) using PyWebView that runs the backend and opens a native window.
+Packaging scripts:
+
+build_windows.bat / build_windows.ps1 (create .exe),
+Or a cross-platform build_all.sh that documents platform-specific notes.
+One-command Replit start: configured in .replit or README with explicit command.
+Migrations: Flask-Migrate / alembic configured and initial migration included.
+Data persistence: Ensure DB stored in OS data dir; document and demonstrate persistence after uninstall.
+README: Sections for:
+One-command Replit start (dev & web),
+How to run locally in browser,
+How to run desktop dev (python desktop_launcher.py),
+Packaging & creating installers,
+How to switch to Postgres,
+How persistence across uninstall works (exact paths).
+Verify artifacts:
+verify_web.sh (smoke tests for web start),
+verify_desktop.sh (instructions and checks to ensure desktop launcher starts and window loads),
+FIXES.md describing changes made.
+Build log / transcript: A short console transcript showing flask db upgrade, web server start, and desktop launcher opening a window (or logs demonstrating headless run on Replit).
+Acceptance criteria (how I will verify success)
+Web mode (Replit & local browser):
+Single-start command runs and serves the Flask app; GET / returns 200.
+SQLite DB created in the OS-configured DIGITALAADHTI_DATA_DIR (unless DATABASE_URL set).
+Desktop mode (local machine):
+Running the delivered desktop launcher opens a native window showing the app UI (served by local Flask backend).
+The desktop app stores its DB in the OS data directory (not inside the installed binary or app folder).
+Packaging scripts produce platform-appropriate artifact(s) (Windows .exe, or similar) or documented step-by-step generator commands that produce them.
+Persistence test:
+Create sample data via desktop UI or browser.
+Uninstall / delete the application files (simulate uninstall).
+Reinstall or re-extract and run app again; the sample data must still be present (DB persisted in DIGITALAADHTI_DATA_DIR).
+Postgres compatibility:
+Without code edits, setting DATABASE_URL to a Postgres URL makes the app connect to Postgres after running migrations.
+Documentation: README clearly documents developer flows, packaging, and persistence verification steps.
+Environment variables to use & document
+DIGITALAADHTI_DATA_DIR — path where DB & persistent files are stored (OS-specific default).
+DATABASE_URL — optional Postgres URL for production.
+SESSION_SECRET — required for production.
+FLASK_ENV, FLASK_APP — for dev convenience.
+Any packaging-related flags (e.g., BUILD_TARGET) documented in README.
+Developer checklist for the Replit task
+Centralize DB config and remove any hard-coded relative DB paths.
+Implement desktop launcher using PyWebView + wrapper that spawns the Flask backend.
+Provide packaging scripts and step-by-step packaging instructions for Windows/(or automated build scripts where practical).
+Ensure DB file location is OS-appropriate, secure (dir perms 700, DB file 600), and outside app bundle.
+Ensure the app remains fully browser-accessible.
+Ensure Flask-Migrate is configured and initial migration committed.
+Provide one Replit start command that runs the web server and demonstrates DB creation in DIGITALAADHTI_DATA_DIR.
+Add smoke tests and verification scripts (web + desktop).
+Update README, .env.example, and FIXES.md.
+Do not commit secrets.Notes / recommended trade-offs (for the implementer)
+PyWebView is lightweight and keeps everything in Python — faster to implement and easier to package with PyInstaller. It’s preferred here for simplicity.
+Electron/Tauri provide more advanced desktop UI capabilities; include as optional alternative with documented pros/cons if implemented.
+For real production distribution, recommend CI pipelines (GitHub Actions) to build platform packages and store artifacts.
